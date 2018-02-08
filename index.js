@@ -3,7 +3,6 @@ const app = express();
 const bodyParser = require("body-parser");
 const { OAuth } = require("oauth");
 
-const port = 3002;
 let oauth = null;
 
 app.use(bodyParser.json());
@@ -86,7 +85,7 @@ app.all("*", (req, res) => {
     `);
 });
 
-app.listen(port, () => {
+app.listen(process.env.PORT, () => {
     oauth = new OAuth(
         "https://api.twitter.com/oauth/request_token",
         "https://api.twitter.com/oauth/access_token",
@@ -96,7 +95,7 @@ app.listen(port, () => {
         "oob",
         "HMAC-SHA1"
     );
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running on port ${process.env.PORT}`);
 });
 
 function getRequestToken() {
