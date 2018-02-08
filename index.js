@@ -20,7 +20,6 @@ app.use((req, res, next) => {
     }
 });
 
-
 app.get("/twitter/request_token", (req, res) => {
     getRequestToken().then(response => {
         res.json({
@@ -75,14 +74,6 @@ app.get("/twitter/timeline", (req, res, next) => {
     }).catch(error => {
         res.json(error);
     });
-});
-
-app.all("*", (req, res) => {
-    res.set("Content-Type", "text/html");
-    res.send(`
-        <h1>Only happy trees here</h1>
-        <img src="https://www.biography.com/.image/t_share/MTI1NDg4NTg2MDAxODA1Mjgy/bob-ross-promojpg.jpg">
-    `);
 });
 
 app.listen(process.env.PORT, () => {
