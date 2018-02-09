@@ -108,16 +108,14 @@ function getRequestToken() {
 
 function getAccessToken({ token, tokenSecret, pinCode }) {
     return new Promise((resolve, reject) => {
-        oauth.getOAuthAccessToken(token, tokenSecret, pinCode, (error, token, tokenSecret, results) => {
+        oauth.getOAuthAccessToken(token, tokenSecret, pinCode, (error, token, tokenSecret) => {
             if (error) {
                 reject(error);
             }
             else {
                 resolve({
                     token,
-                    tokenSecret,
-                    userId: results.user_id,
-                    screenName: results.screen_name
+                    tokenSecret
                 });
             }
         });
