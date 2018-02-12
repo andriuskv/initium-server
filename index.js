@@ -135,7 +135,7 @@ function getParamString(url) {
 }
 
 function getTimeline(token, secret, str) {
-    const url = `https://api.twitter.com/1.1/statuses/home_timeline.json${str ? `?${str}`: str}`;
+    const url = `https://api.twitter.com/1.1/statuses/home_timeline.json${str ? `?${str}` : str}`;
 
     return makeRequest(url, token, secret);
 }
