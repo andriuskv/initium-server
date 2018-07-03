@@ -4,19 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "start-dev": "source config/env && node --inspect index.js"
+    "start": "nodemon index.js",
+    "start-dev": "source config/env && nodemon --inspect index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.18.2",
-    "express": "^4.16.2",
-    "oauth": "^0.9.15"
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
+    "express": "^4.16.3",
+    "oauth": "^0.9.15",
+    "rss-parser": "^3.4.2"
   },
   "devDependencies": {
-    "babel-eslint": "^8.2.1",
-    "eslint": "^4.17.0"
+    "babel-eslint": "^8.2.5",
+    "eslint": "^5.0.1",
+    "nodemon": "^1.17.5"
   }
 }
