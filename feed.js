@@ -12,7 +12,11 @@ router.get("/", (req, res) => {
     res.sendStatus(400);
     return;
   }
-  parser.parseURL(req.query.url).then(feed => {
+
+  // Treat everything after "?url=" as feed url
+  const url = req.url.split("?url=")[1];
+
+  parser.parseURL(url).then(feed => {
     res.json({ feed });
   }).catch(error => {
     res.json({ message: error.message });
