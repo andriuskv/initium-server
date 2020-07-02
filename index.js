@@ -8,10 +8,18 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "x-authorization"]
 }));
 
-app.use("/feed", require("./feed.js"));
-app.use("/twitter", require("./twitter.js"));
-app.use("/owm", require("./owm.js"));
+app.use("/api/feed", require("./feed.js"));
+app.use("/api/twitter", require("./twitter.js"));
+app.use("/api/owm", require("./owm.js"));
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
+app.get("/feed", redirect);
+app.get("/twitter", redirect);
+app.get("/owm", redirect);
+
+function redirect(req, res) {
+  res.redirect(301, `/api${req.originalUrl}`);
+}
+
+app.listen(process.env.PORT || 8080, () => {
+  console.log(`Server running on port ${process.env.PORT || 8080}`);
 });

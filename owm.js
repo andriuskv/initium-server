@@ -16,7 +16,16 @@ router.get("/", (req, res) => {
 });
 
 function fetchWeather(params) {
-  const url = new URL("http://api.openweathermap.org/data/2.5/weather");
+  let url = null;
+
+  if (params.type === "hourly") {
+    url = new URL("http://api.openweathermap.org/data/2.5/onecall");
+    delete params.type;
+    url.searchParams.set("exclude", "current,minutely,daily");
+  }
+  else {
+    url = new URL("http://api.openweathermap.org/data/2.5/weather")
+  }
 
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
