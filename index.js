@@ -13,7 +13,7 @@ app.use("/api/twitter", require("./twitter.js"));
 app.use("/api/owm", require("./owm.js"));
 
 app.get("/feed", redirect);
-app.get("/twitter", redirect);
+app.get("/twitter/*", redirect);
 app.get("/owm", redirect);
 
 function redirect(req, res) {
