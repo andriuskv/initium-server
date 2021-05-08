@@ -7,20 +7,21 @@ const parser = new Parser({
   }
 });
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (!req.query.url) {
     res.sendStatus(400);
     return;
   }
-
-  // Treat everything after "?url=" as feed url
+  // Treat everything after "?url=" as a feed url
   const url = req.url.split("?url=")[1];
 
-  parser.parseURL(url).then(feed => {
+  try {
+    const feed = await parser.parseURL(url);
+
     res.json({ feed });
-  }).catch(error => {
-    res.json({ message: error.message });
-  });
+  } catch (e) {
+    res.json({ message: e.message });
+  }
 });
 
 module.exports = router;

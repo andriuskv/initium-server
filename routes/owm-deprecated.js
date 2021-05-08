@@ -15,16 +15,16 @@ router.get("/", (req, res) => {
   }
 });
 
-function fetchWeather(params) {
+async function fetchWeather(params) {
   let url = null;
 
   if (params.type === "hourly") {
-    url = new URL("http://api.openweathermap.org/data/2.5/onecall");
+    url = new URL("https://api.openweathermap.org/data/2.5/onecall");
     delete params.type;
     url.searchParams.set("exclude", "current,minutely,daily");
   }
   else {
-    url = new URL("http://api.openweathermap.org/data/2.5/weather")
+    url = new URL("https://api.openweathermap.org/data/2.5/weather");
   }
 
   for (const [key, value] of Object.entries(params)) {
@@ -32,8 +32,7 @@ function fetchWeather(params) {
   }
   url.searchParams.set("units", "metric");
   url.searchParams.set("appid", process.env.OWM_API_KEY);
-
-  return fetch(url).then(response => response.json());
+  return fetch(url).then(res => res.json());
 }
 
 module.exports = router;
