@@ -158,7 +158,7 @@ function parseTweets(tweets) {
   });
 }
 
-function getTweetContent(tweet) {
+function getTweetContent(tweet, isQuotedTweet = false) {
   const screenName = tweet.user.screen_name;
   const userUrl = `https://twitter.com/${screenName}`;
   const media = tweet.extended_entities?.media;
@@ -171,11 +171,10 @@ function getTweetContent(tweet) {
     name: tweet.user.name,
     handle: `@${screenName}`,
     verified: tweet.user.verified,
-    repliedTo: tweet.in_reply_to_status_id_str ? tweet.in_reply_to_status_id_str : undefined,
     quotedTweet,
     tweetUrl: `${userUrl}/status/${tweet.id_str}`,
     profileImg: tweet.user.profile_image_url_https,
-    text: replaceTweetEntities(tweet.full_text, entities, quotedTweet),
+    text: replaceTweetEntities(tweet.full_text, entities, quotedTweet, isQuotedTweet),
     date: getTweetDate(tweet.created_at),
     media: getMedia(entities.media),
     retweetCount: formatCounter(tweet.retweet_count),
@@ -199,23 +198,23 @@ function getTweetEntity(entity) {
 function getQuotedTweet(tweet) {
   if (tweet.quoted_status) {
     return {
-      ...getTweetContent(tweet.quoted_status),
+      ...getTweetContent(tweet.quoted_status, true),
       placeholderUrl: tweet.quoted_status_permalink.url
     };
   }
 }
 
-function replaceTweetEntities(text, entities, quotedTweet) {
+function replaceTweetEntities(text, entities, quotedTweet, isQuotedTweet) {
   if (entities.userMentions.length) {
-    text = replaceUserMentions(text, entities.userMentions);
+    text = replaceUserMentions(text, entities.userMentions, isQuotedTweet);
   }
 
   if (entities.hashtags.length) {
-    text = replaceHashtags(text, entities.hashtags);
+    text = replaceHashtags(text, entities.hashtags, isQuotedTweet);
   }
 
   if (entities.urls.length) {
-    text = replaceUrls(text, entities.urls, quotedTweet);
+    text = replaceUrls(text, entities.urls, quotedTweet, isQuotedTweet);
   }
 
   if (entities.media.length) {
@@ -225,39 +224,45 @@ function replaceTweetEntities(text, entities, quotedTweet) {
   return text;
 }
 
-function replaceUserMentions(text, userMentions) {
+function replaceUserMentions(text, userMentions, isQuotedTweet) {
   userMentions.forEach(user => {
     const screenNameRegex = new RegExp(`[@＠]${user.screen_name}\\b`, "gi");
     const mention = text.match(screenNameRegex)[0];
     const mentionRegex = new RegExp(`${mention}\\b`, "g");
     const href = `https://twitter.com/${user.screen_name}`;
-    const a = `<a href="${href}" class="tweet-link" target="_blank">${mention}</a>`;
+    const replacement = isQuotedTweet ? `<span>${mention}</span>` : `<a href="${href}" class="tweet-link" target="_blank">${mention}</a>`;
 
-    text = text.replace(mentionRegex, a);
+    text = text.replace(mentionRegex, replacement);
   });
   return text;
 }
 
-function replaceHashtags(text, hashtags) {
+function replaceHashtags(text, hashtags, isQuotedTweet) {
   hashtags.forEach(({ text: hashtag }) => {
     const regex = new RegExp(`#${hashtag}\\b`, "g");
     const href = `https://twitter.com/hashtag/${hashtag}?src=hash`;
-    const a = `<a href="${href}" class="tweet-link" target="_blank">#${hashtag}</a>`;
+    const replacement = isQuotedTweet ? `<span>${hashtag}</span>` : `<a href="${href}" class="tweet-link" target="_blank">#${hashtag}</a>`;
 
-    text = text.replace(regex, a);
+    text = text.replace(regex, replacement);
   });
   return text;
 }
 
-function replaceUrls(text, urls, quotedTweet) {
+function replaceUrls(text, urls, quotedTweet, isQuotedTweet) {
   const tweetUrl = quotedTweet ? quotedTweet.placeholderUrl : "";
 
   urls.filter(({ url }, index) => {
     return index === urls.findIndex(obj => obj.url === url);
   }).forEach(({ url, display_url }) => {
     const regex = new RegExp(url, "g");
-    const replacement = tweetUrl === url ? "" : `<a href="${url}" class="tweet-link" target="_blank">${display_url}</a>`;
+    let replacement = "";
 
+    if (isQuotedTweet) {
+      replacement = `<span>${display_url}</span>`;
+    }
+    else if (tweetUrl !== url) {
+      replacement = `<a href="${url}" class="tweet-link" target="_blank">${display_url}</a>`;
+    }
     text = text.replace(regex, replacement);
   });
   return text.trim();

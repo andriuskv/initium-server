@@ -30,7 +30,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-async function fetchWeather(params) {
+function fetchWeather(params) {
   const url = getUrl(params);
   return fetch(url).then(res => res.json());
 }
