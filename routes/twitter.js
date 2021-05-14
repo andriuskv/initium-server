@@ -312,6 +312,7 @@ function getMedia(media) {
         durationInSeconds,
         type: item.type,
         thumbUrl: item.media_url_https,
+        height: item.sizes.medium.h,
         url: item.video_info.variants.find(variant => variant.content_type === "video/mp4").url
       };
     }

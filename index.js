@@ -8,6 +8,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "x-authorization"]
 }));
 
+app.use(express.json());
+
 app.use("/api/v1/feed", require("./routes/feed.js"));
 app.use("/api/v1/twitter", require("./routes/twitter.js"));
 app.use("/api/v1/owm", require("./routes/owm.js"));
