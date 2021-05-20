@@ -68,6 +68,7 @@ router.get("/timeline", async (req, res, next) => {
 
     res.json({ tweets });
   } catch (e) {
+    console.log(e);
     res.json(e);
   }
 });
@@ -294,11 +295,19 @@ function getTweetDate(createdAt) {
 }
 
 function getMedia(media) {
-  return media.map(item => {
+  const maxWidth = 506;
+  const containerWidth = maxWidth / 2;
+  let containerHeight = 284;
+
+  if (media.length > 2) {
+    containerHeight /= 2;
+  }
+  return media.map((item, index) => {
     if (item.type === "animated_gif") {
       return {
         type: "gif",
         thumbUrl: item.media_url_https,
+        height: Math.ceil(maxWidth * item.sizes.medium.h / item.sizes.medium.w),
         url: item.video_info.variants[0].url
       };
     }
@@ -312,15 +321,28 @@ function getMedia(media) {
         durationInSeconds,
         type: item.type,
         thumbUrl: item.media_url_https,
-        height: Math.ceil(506 * item.sizes.medium.h / item.sizes.medium.w),
+        height: Math.ceil(maxWidth * item.sizes.medium.h / item.sizes.medium.w),
         url: findMidQualityVideo(item.video_info.variants)
       };
     }
+    const { w, h } = item.sizes.medium;
+    let height = containerHeight;
+    let smallestDimension = "";
 
+    if (index === 0 && media.length === 3) {
+      height = containerHeight * 2;
+    }
+
+    if (w * height / containerWidth > h) {
+      smallestDimension = "height";
+    }
+    else {
+      smallestDimension = "width";
+    }
     return {
       type: item.type,
       url: item.media_url_https,
-      height: Math.ceil(506 * item.sizes.medium.h / item.sizes.medium.w)
+      smallestDimension
     };
   });
 }
@@ -333,7 +355,10 @@ function formatDuration(seconds) {
 }
 
 function findMidQualityVideo(items) {
-  return items.filter(item => item.bitrate).sort((a, b) => a.bitrate - b.bitrate)[1].url;
+  const sortedItems = items.filter(item => item.bitrate).sort((a, b) => a.bitrate - b.bitrate);
+  const index = sortedItems.length > 1 ? 1 : 0;
+
+  return sortedItems[index].url;
 }
 
 function roundTo(number, places) {
