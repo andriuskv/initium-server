@@ -77,7 +77,7 @@ function parseWeather(data, units) {
 function parseHourlyWeather(data, units) {
   return data.hourly.map(item => {
     return {
-      forecastHours: new Date(item.dt * 1000).getHours(),
+      hour: new Date(item.dt * 1000).getHours(),
       temperature: units === "C" ?
         Math.round(item.temp) :
         convertTemperature(item.temp, units),
