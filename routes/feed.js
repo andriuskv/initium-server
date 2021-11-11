@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const NodeCache = require("node-cache");
 const Parser = require("rss-parser");
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const parser = new Parser({
   customFields: {
     feed: [["subtitle", "description"]],
@@ -17,10 +19,20 @@ router.get("/", async (req, res) => {
   const url = req.url.split("?url=")[1];
 
   try {
-    const feed = await parser.parseURL(url);
+    const value = cache.get(url);
 
-    res.json({ feed: parseFeed(feed) });
+    if (value) {
+      res.json({ feed: value });
+    }
+    else {
+      const feed = await parser.parseURL(url);
+      const parsedFeed = parseFeed(feed);
+
+      cache.set(url, parsedFeed);
+      res.json({ feed: parsedFeed });
+    }
   } catch (e) {
+    console.log(e);
     res.json({ message: e.message });
   }
 });
