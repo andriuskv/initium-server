@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import fetch from "node-fetch";
+
 const router = express.Router();
-const fetch = require("node-fetch");
 
 router.get("/", async (req, res) => {
   if (req.query.q || (req.query.lat && req.query.lon)) {
@@ -134,4 +135,6 @@ function getWindDirection(degrees) {
   return { name, degrees };
 }
 
-module.exports = router;
+export {
+  router
+};
