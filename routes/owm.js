@@ -109,28 +109,28 @@ function getWindDirection(degrees) {
   let name = "";
 
   if (degrees > 337.5 || degrees <= 22.5) {
-    name = "N";
+    name = "North";
   }
   else if (degrees > 22.5 && degrees <= 67.5) {
-    name = "NE";
+    name = "Northeast";
   }
   else if (degrees > 67.5 && degrees <= 112.5) {
-    name = "E";
+    name = "East";
   }
   else if (degrees > 112.5 && degrees <= 157.5) {
-    name = "SE";
+    name = "Southeast";
   }
   else if (degrees > 157.5 && degrees <= 202.5) {
-    name = "S";
+    name = "South";
   }
   else if (degrees > 202.5 && degrees <= 247.5) {
-    name = "SW";
+    name = "Southwest";
   }
   else if (degrees > 247.5 && degrees <= 292.5) {
-    name = "W";
+    name = "West";
   }
   else if (degrees > 292.5 && degrees <= 337.5) {
-    name = "NW";
+    name = "Northwest";
   }
   return { name, degrees };
 }
