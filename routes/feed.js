@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import NodeCache from "node-cache";
+import Parser from "rss-parser";
+
 const router = express.Router();
-const NodeCache = require("node-cache");
-const Parser = require("rss-parser");
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const parser = new Parser({
   customFields: {
@@ -51,4 +52,6 @@ function parseFeed(feed) {
   return feed;
 }
 
-module.exports = router;
+export {
+  router
+};

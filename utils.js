@@ -29,7 +29,7 @@ function getMonth(month, useShortName = false) {
   return useShortName ? months[month].slice(0, 3) : months[month];
 }
 
-module.exports = {
+export {
   formatTime,
   getMonth
 };

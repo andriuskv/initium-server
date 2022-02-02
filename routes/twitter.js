@@ -1,8 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const { OAuth } = require("oauth");
-const { formatTime, getMonth } = require("../utils");
+import express from "express";
+import { OAuth } from "oauth";
+import { formatTime, getMonth } from "../utils.js";
 
+const router = express.Router();
 const oauth = new OAuth(
   "https://api.twitter.com/oauth/request_token",
   "https://api.twitter.com/oauth/access_token",
@@ -381,4 +381,6 @@ function formatCounter(value) {
   return roundedValue + symbol;
 }
 
-module.exports = router;
+export {
+  router
+};
