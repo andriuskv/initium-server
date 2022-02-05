@@ -53,6 +53,42 @@ router.get("/user", async (req, res, next) => {
   }
 });
 
+router.get("/users/:handle", async (req, res, next) => {
+  const header = req.headers["x-authorization"];
+
+  if (!header) {
+    next();
+    return;
+  }
+  const { oauth_token, oauth_token_secret } = parseHeader(header);
+
+  try {
+    const user = await fetchUserByHandle(req.params.handle, oauth_token, oauth_token_secret);
+
+    res.json(parseTweetUser(user));
+  } catch (e) {
+    if (e.data?.errors?.length) {
+      const [error] = e.data.errors;
+
+      if (error.code === 63) {
+        res.json({
+          name: req.params.handle,
+          handle: `@${req.params.handle}`,
+          url: `https://twitter.com/${req.params.handle}`,
+          description: "Account suspended",
+          suspended: true
+        });
+      }
+      else {
+        res.json(e);
+      }
+    }
+    else {
+      res.json(e);
+    }
+  }
+});
+
 router.get("/timeline", async (req, res, next) => {
   const header = req.headers["x-authorization"];
 
@@ -127,6 +163,12 @@ function fetchUser(token, secret) {
   return makeRequest(url, token, secret);
 }
 
+function fetchUserByHandle(handle, token, secret) {
+  const url = `https://api.twitter.com/1.1/users/show.json?screen_name=${handle}`;
+
+  return makeRequest(url, token, secret);
+}
+
 function makeRequest(url, token, secret) {
   return new Promise((resolve, reject) => {
     oauth.get(url, token, secret, (error, body) => {
@@ -149,14 +191,25 @@ function parseTweets(tweets) {
       const newTweet = getTweetContent(retweet);
 
       newTweet.id = tweet.id_str;
-      newTweet.retweetedBy = {
-        name: tweet.user.name,
-        userUrl: `https://twitter.com/${tweet.user.screen_name}`
-      };
+      newTweet.retweetedBy = parseTweetUser(tweet.user);
       return newTweet;
     }
     return getTweetContent(tweet);
   });
+}
+
+function parseTweetUser(user) {
+  return {
+    name: user.name,
+    handle: `@${user.screen_name}`,
+    url: `https://twitter.com/${user.screen_name}`,
+    profileImageUrl: user.profile_image_url_https,
+    description: getUserDescription(user),
+    verified: user.verified,
+    following: user.following,
+    followerCount: formatCounter(user.followers_count),
+    followingCount: formatCounter(user.friends_count)
+  };
 }
 
 function getTweetContent(tweet, isQuotedTweet = false) {
@@ -164,18 +217,14 @@ function getTweetContent(tweet, isQuotedTweet = false) {
   const userUrl = `https://twitter.com/${screenName}`;
   const media = tweet.extended_entities?.media;
   const quotedTweet = getQuotedTweet(tweet);
-  const entities = getTweetEntities({ ...tweet.entities, media });
+  const entities = getEntities({ ...tweet.entities, media });
 
   return {
-    userUrl,
+    user: parseTweetUser(tweet.user),
     id: tweet.id_str,
-    name: tweet.user.name,
-    handle: `@${screenName}`,
-    verified: tweet.user.verified,
     quotedTweet,
     tweetUrl: `${userUrl}/status/${tweet.id_str}`,
-    profileImg: tweet.user.profile_image_url_https,
-    text: replaceTweetEntities(tweet.full_text, entities, quotedTweet, isQuotedTweet),
+    text: replaceEntities(tweet.full_text, entities, quotedTweet, isQuotedTweet),
     date: getTweetDate(tweet.created_at),
     media: getMedia(entities.media),
     retweetCount: formatCounter(tweet.retweet_count),
@@ -183,17 +232,11 @@ function getTweetContent(tweet, isQuotedTweet = false) {
   };
 }
 
-function getTweetEntities(entities) {
-  return {
-    hashtags: getTweetEntity(entities.hashtags),
-    userMentions: getTweetEntity(entities.user_mentions),
-    urls: getTweetEntity(entities.urls),
-    media: getTweetEntity(entities.media)
-  };
-}
+function getUserDescription(user) {
+  const entities = getEntities(user.entities.description);
+  const description = replaceEntities(user.description, entities);
 
-function getTweetEntity(entity) {
-  return entity?.length ? entity : [];
+  return replaceUserDescriptionMentions(description);
 }
 
 function getQuotedTweet(tweet) {
@@ -205,7 +248,29 @@ function getQuotedTweet(tweet) {
   }
 }
 
-function replaceTweetEntities(text, entities, quotedTweet, isQuotedTweet) {
+function getEntities(entities) {
+  return {
+    hashtags: getEntity(entities.hashtags),
+    userMentions: getEntity(entities.user_mentions),
+    urls: getEntity(entities.urls),
+    media: getEntity(entities.media)
+  };
+}
+
+function getEntity(entity) {
+  return entity?.length ? entity : [];
+}
+
+function replaceUserDescriptionMentions(description) {
+  const regex = /(^|[\s])([@＠]\w+)\b/gi;
+
+  return description.replace(regex, (match, g1, g2) => {
+    const href = `https://twitter.com/${g2}`;
+    return match.replace(g2, `<a href="${href}" class="tweet-link" target="_blank">${g2}</a>`);
+  });
+}
+
+function replaceEntities(text, entities, quotedTweet, isQuotedTweet) {
   if (entities.userMentions.length) {
     text = replaceUserMentions(text, entities.userMentions, isQuotedTweet);
   }
@@ -231,7 +296,7 @@ function replaceUserMentions(text, userMentions, isQuotedTweet) {
     const mention = text.match(screenNameRegex)[0];
     const mentionRegex = new RegExp(`${mention}\\b`, "g");
     const href = `https://twitter.com/${user.screen_name}`;
-    const replacement = isQuotedTweet ? `<span>${mention}</span>` : `<a href="${href}" class="tweet-link" target="_blank">${mention}</a>`;
+    const replacement = isQuotedTweet ? `<span>${mention}</span>` : `<a href="${href}" class="tweet-link handle" target="_blank">${mention}</a>`;
 
     text = text.replace(mentionRegex, replacement);
   });
@@ -242,7 +307,7 @@ function replaceHashtags(text, hashtags, isQuotedTweet) {
   hashtags.forEach(({ text: hashtag }) => {
     const regex = new RegExp(`#${hashtag}\\b`, "g");
     const href = `https://twitter.com/hashtag/${hashtag}?src=hash`;
-    const replacement = isQuotedTweet ? `<span>${hashtag}</span>` : `<a href="${href}" class="tweet-link" target="_blank">#${hashtag}</a>`;
+    const replacement = isQuotedTweet ? `<span>#${hashtag}</span>` : `<a href="${href}" class="tweet-link" target="_blank">#${hashtag}</a>`;
 
     text = text.replace(regex, replacement);
   });
@@ -295,7 +360,7 @@ function getTweetDate(createdAt) {
 }
 
 function getMedia(media) {
-  const maxWidth = 506;
+  const maxWidth = 500;
   const containerWidth = maxWidth / 2;
   let containerHeight = 284;
 
