@@ -387,7 +387,7 @@ function getMedia(media) {
         type: item.type,
         thumbUrl: item.media_url_https,
         height: Math.ceil(maxWidth * item.sizes.medium.h / item.sizes.medium.w),
-        url: findMidQualityVideo(item.video_info.variants)
+        sources: getVideoSources(item.video_info.variants)
       };
     }
     const { w, h } = item.sizes.medium;
@@ -419,11 +419,18 @@ function formatDuration(seconds) {
   return formatTime(seconds);
 }
 
-function findMidQualityVideo(items) {
-  const sortedItems = items.filter(item => item.bitrate).sort((a, b) => a.bitrate - b.bitrate);
-  const index = sortedItems.length > 1 ? 1 : 0;
+function getVideoSources(items) {
+  const sortedItems = items.filter(item => item.bitrate).sort((a, b) => b.bitrate - a.bitrate);
+  const qualities = ["high", "medium", "low"];
+  const sources = {};
 
-  return sortedItems[index].url;
+  for (let i = 0; i < sortedItems.length; i += 1) {
+    if (qualities[i]) {
+      sources[qualities[i]] = sortedItems[i].url;
+    }
+  }
+
+  return sources;
 }
 
 function roundTo(number, places) {
