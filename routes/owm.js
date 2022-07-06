@@ -16,7 +16,11 @@ router.get("/", async (req, res) => {
         return res.send({ status: 500, type: "general", message: "Could not update weather, try again later." });
       }
 
-      if (type === "hourly") {
+      if (type === "more") {
+        res.send(parseMoreWeather(data, units));
+      }
+      // Deprecated
+      else if (type === "hourly") {
         res.send({ hourly: parseHourlyWeather(data, units) });
       }
       else {
@@ -39,7 +43,12 @@ function fetchWeather(params) {
 function getUrl(params) {
   let url = null;
 
-  if (params.type === "hourly") {
+  if (params.type === "more") {
+    url = new URL("https://api.openweathermap.org/data/2.5/onecall");
+    delete params.type;
+    url.searchParams.set("exclude", "current,minutely,alerts");
+  }
+  else if (params.type === "hourly") {
     url = new URL("https://api.openweathermap.org/data/2.5/onecall");
     delete params.type;
     url.searchParams.set("exclude", "current,minutely,daily");
@@ -68,7 +77,7 @@ function parseWeather(data, units) {
     description: capitalizeString(weather.description),
     coords: data.coord,
     wind: {
-      speed: data.wind.speed,
+      speed:  Math.round(data.wind.speed),
       direction: getWindDirection(data.wind.deg)
     },
     icon: getIconUrl(weather.icon)
@@ -85,6 +94,48 @@ function parseHourlyWeather(data, units) {
       icon: getIconUrl(item.weather[0].icon)
     };
   });
+}
+
+function parseMoreWeather(data, units) {
+  const currentDateInSeconds = Date.now() / 1000;
+  const hourly = data.hourly
+    .filter(item => item.dt > currentDateInSeconds - 3600)
+    .slice(0, 25)
+    .map(item => {
+      return {
+        hour: new Date(item.dt * 1000).getHours(),
+        temperature: units === "C" ?
+          Math.round(item.temp) :
+          convertTemperature(item.temp, units),
+        precipitation: Math.round(item.pop * 100),
+        wind: {
+          speed: Math.round(item.wind_speed),
+          direction: getWindDirection(item.wind_deg)
+        }
+      };
+    });
+  const daily = data.daily.map(item => {
+    const [weather] = item.weather;
+    const weekday = new Intl.DateTimeFormat(["en"], {
+      weekday: "short"
+    }).format(item.dt * 1000);
+
+    return {
+      temperature: {
+        min: units === "C" ?
+          Math.round(item.temp.min) :
+          convertTemperature(item.temp.min, units),
+        max:units === "C" ?
+          Math.round(item.temp.max) :
+          convertTemperature(item.temp.max, units)
+      },
+      weekday,
+      description: capitalizeString(weather.description),
+      icon: getIconUrl(weather.icon)
+    };
+  });
+
+  return { hourly, daily };
 }
 
 function convertTemperature(temp, units) {
