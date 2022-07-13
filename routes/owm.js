@@ -6,7 +6,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   if (req.query.q || (req.query.lat && req.query.lon)) {
     try {
-      const { type, units, timestamp } = req.query;
+      const { type, units } = req.query;
       const data = await fetchWeather(req.query);
 
       if (data.cod === "404") {
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
       }
 
       if (type === "more") {
-        res.send(parseMoreWeather(data, units, timestamp));
+        res.send(parseMoreWeather(data, units));
       }
       // Deprecated
       else if (type === "hourly") {
@@ -96,9 +96,8 @@ function parseHourlyWeather(data, units) {
   });
 }
 
-function parseMoreWeather(data, units, timestamp = Date.now()) {
-  console.log(timestamp, Date.now());
-  const currentDateInSeconds = timestamp / 1000;
+function parseMoreWeather(data, units) {
+  const currentDateInSeconds = Date.now() / 1000;
   const hourly = data.hourly
     .filter(item => item.dt + data.timezone_offset > currentDateInSeconds - 3600)
     .slice(0, 25)
