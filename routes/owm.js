@@ -97,9 +97,10 @@ function parseHourlyWeather(data, units) {
 }
 
 function parseMoreWeather(data, units, timestamp = Date.now()) {
+  console.log(timestamp, Date.now());
   const currentDateInSeconds = timestamp / 1000;
   const hourly = data.hourly
-    .filter(item => item.dt > currentDateInSeconds - 3600)
+    .filter(item => item.dt + data.timezone_offset > currentDateInSeconds - 3600)
     .slice(0, 25)
     .map(item => {
       return {
