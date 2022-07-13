@@ -104,7 +104,7 @@ function parseMoreWeather(data, units, timestamp = Date.now()) {
     .slice(0, 25)
     .map(item => {
       return {
-        hour: new Date(item.dt * 1000).getHours(),
+        hour: new Date((item.dt + data.timezone_offset) * 1000).getHours(),
         temperature: units === "C" ?
           Math.round(item.temp) :
           convertTemperature(item.temp, units),
