@@ -19,10 +19,6 @@ router.get("/", async (req, res) => {
       if (type === "more") {
         res.send(parseMoreWeather(data, units));
       }
-      // Deprecated
-      else if (type === "hourly") {
-        res.send({ hourly: parseHourlyWeather(data, units) });
-      }
       else {
         res.send(parseWeather(data, units));
       }
@@ -66,37 +62,29 @@ function getUrl(params) {
 }
 
 function parseWeather(data, units) {
+  const [tempUnits, speedUnits = "m/s"] = units.split(",");
   const [weather] = data.weather;
 
   return {
     city: data.name,
-    temperature: units === "C" ?
+    temperature: tempUnits === "C" ?
       Math.round(data.main.temp) :
-      convertTemperature(data.main.temp, units),
+      convertTemperature(data.main.temp, tempUnits),
     humidity: data.main.humidity,
     description: capitalizeString(weather.description),
     coords: data.coord,
     wind: {
-      speed:  Math.round(data.wind.speed),
+      speed: speedUnits === "m/s" ?
+        Math.round(data.wind.speed) :
+        convertWindSpeed(data.wind.speed, speedUnits),
       direction: getWindDirection(data.wind.deg)
     },
     icon: getIconUrl(weather.icon)
   };
 }
 
-function parseHourlyWeather(data, units) {
-  return data.hourly.map(item => {
-    return {
-      hour: new Date(item.dt * 1000).getHours(),
-      temperature: units === "C" ?
-        Math.round(item.temp) :
-        convertTemperature(item.temp, units),
-      icon: getIconUrl(item.weather[0].icon)
-    };
-  });
-}
-
 function parseMoreWeather(data, units) {
+  const [tempUnits, speedUnits = "m/s"] = units.split(",");
   const currentDateInSeconds = Date.now() / 1000;
   const hourly = data.hourly
     .filter(item => item.dt + data.timezone_offset > currentDateInSeconds - 3600)
@@ -104,12 +92,14 @@ function parseMoreWeather(data, units) {
     .map(item => {
       return {
         hour: new Date((item.dt + data.timezone_offset) * 1000).getUTCHours(),
-        temperature: units === "C" ?
+        temperature: tempUnits === "C" ?
           Math.round(item.temp) :
-          convertTemperature(item.temp, units),
+          convertTemperature(item.temp, tempUnits),
         precipitation: Math.round(item.pop * 100),
         wind: {
-          speed: Math.round(item.wind_speed),
+          speed: speedUnits === "m/s" ?
+            Math.round(item.wind_speed) :
+            convertWindSpeed(item.wind_speed, speedUnits),
           direction: getWindDirection(item.wind_deg)
         }
       };
@@ -122,12 +112,12 @@ function parseMoreWeather(data, units) {
 
     return {
       temperature: {
-        min: units === "C" ?
+        min: tempUnits === "C" ?
           Math.round(item.temp.min) :
-          convertTemperature(item.temp.min, units),
-        max:units === "C" ?
+          convertTemperature(item.temp.min, tempUnits),
+        max: tempUnits === "C" ?
           Math.round(item.temp.max) :
-          convertTemperature(item.temp.max, units)
+          convertTemperature(item.temp.max, tempUnits)
       },
       weekday,
       description: capitalizeString(weather.description),
@@ -138,14 +128,24 @@ function parseMoreWeather(data, units) {
   return { hourly, daily };
 }
 
-function convertTemperature(temp, units) {
+function convertTemperature(value, units) {
   if (units === "F") {
-    temp = temp * 1.8 + 32;
+    value = value * 1.8 + 32;
   }
   else {
-    temp = (temp - 32) / 1.8;
+    value = (value - 32) / 1.8;
   }
-  return Math.round(temp);
+  return Math.round(value);
+}
+
+function convertWindSpeed(value, units) {
+  if (units === "m/s") {
+    value = value * 0.3048;
+  }
+  else {
+    value = value / 0.3048;
+  }
+  return Math.round(value);
 }
 
 function getIconUrl(icon) {
