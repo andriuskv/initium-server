@@ -15,6 +15,7 @@ router.get("/", async (req, res) => {
       else if (data.cod === "500") {
         return res.send({ status: 500, type: "general", message: "Could not update weather, try again later." });
       }
+      res.set("Cache-control", "public, max-age=300");
 
       if (type === "more") {
         res.send(parseMoreWeather(data, units));

@@ -23,6 +23,7 @@ router.get("/", async (req, res) => {
     const value = cache.get(url);
 
     if (value) {
+      res.set("Cache-control", "public, max-age=300");
       res.json({ feed: value });
     }
     else {
@@ -30,6 +31,7 @@ router.get("/", async (req, res) => {
       const parsedFeed = parseFeed(feed);
 
       cache.set(url, parsedFeed);
+      res.set("Cache-control", "public, max-age=300");
       res.json({ feed: parsedFeed });
     }
   } catch (e) {
