@@ -1,6 +1,8 @@
 import express from "express";
 import NodeCache from "node-cache";
 import Parser from "rss-parser";
+import { decode } from "html-entities";
+
 
 const router = express.Router();
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
@@ -49,6 +51,7 @@ function parseFeed(feed) {
       item.thumbnail = group["media:thumbnail"][0].$.url;
       item.content = group["media:description"][0];
     }
+    item.title = decode(item.title);
     return item;
   });
   return feed;
