@@ -361,18 +361,15 @@ function getTweetDate(createdAt) {
 
 function getMedia(media) {
   const maxWidth = 500;
-  const containerWidth = maxWidth / 2;
-  let containerHeight = 284;
 
-  if (media.length > 2) {
-    containerHeight /= 2;
-  }
   return media.map((item, index) => {
+    const { w, h } = item.sizes.medium;
+
     if (item.type === "animated_gif") {
       return {
         type: "gif",
         thumbUrl: item.media_url_https,
-        height: Math.ceil(maxWidth * item.sizes.medium.h / item.sizes.medium.w),
+        height: Math.ceil(maxWidth * h / w),
         url: item.video_info.variants[0].url
       };
     }
@@ -386,27 +383,55 @@ function getMedia(media) {
         durationInSeconds,
         type: item.type,
         thumbUrl: item.media_url_https,
-        height: Math.ceil(maxWidth * item.sizes.medium.h / item.sizes.medium.w),
+        height: Math.ceil(maxWidth * h / w),
         sources: getVideoSources(item.video_info.variants)
       };
     }
-    const { w, h } = item.sizes.medium;
-    let height = containerHeight;
+    let containerWidth = maxWidth;
+    let containerHeight = 284;
     let smallestDimension = "";
+    let width = w;
+    let height = h;
 
-    if (index === 0 && media.length === 3) {
-      height = containerHeight * 2;
+    if (media.length > 1) {
+      containerWidth = containerWidth / 2 - 1;
     }
 
-    if (w * height / containerWidth > h) {
+    if (media.length > 2) {
+      containerHeight = containerHeight / 2 - 1;
+
+      if (index === 0 && media.length === 3) {
+        containerHeight = containerHeight * 2 + 2;
+      }
+    }
+
+    if (w * containerHeight / containerWidth > h) {
       smallestDimension = "height";
+
+      height = containerHeight;
+      width = Math.ceil(height * w / h);
+
+      if (width < containerWidth) {
+        width = containerWidth;
+        height = Math.ceil(containerWidth * h / w);
+      }
     }
     else {
       smallestDimension = "width";
+
+      width = containerWidth;
+      height = Math.ceil(containerWidth * h / w);
+
+      if (height < containerHeight) {
+        height = containerHeight;
+        width = Math.ceil(height * w / h);
+      }
     }
     return {
       type: item.type,
       url: item.media_url_https,
+      width,
+      height,
       smallestDimension
     };
   });
