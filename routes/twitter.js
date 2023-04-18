@@ -234,9 +234,11 @@ function getTweetContent(tweet, isQuotedTweet = false) {
 
 function getUserDescription(user) {
   const entities = getEntities(user.entities.description);
-  const description = replaceEntities(user.description, entities);
+  let description = replaceEntities(user.description, entities);
+  description = replaceUserDescriptionMentions(description);
+  description = replaceUserDescriptionHashtags(description);
 
-  return replaceUserDescriptionMentions(description);
+  return description;
 }
 
 function getQuotedTweet(tweet) {
@@ -267,6 +269,16 @@ function replaceUserDescriptionMentions(description) {
   return description.replace(regex, (match, g1, g2) => {
     const href = `https://twitter.com/${g2}`;
     return match.replace(g2, `<a href="${href}" class="tweet-link" target="_blank">${g2}</a>`);
+  });
+}
+
+function replaceUserDescriptionHashtags(description) {
+  const regex = /(#.+?)(\s|$)/gi;
+
+  return description.replace(regex, (match, g1) => {
+    const withEscapedHashtag = g1.replace("#", "%23");
+    const href = `https://twitter.com/search?q=${withEscapedHashtag}&src=hashtag_click`;
+    return match.replace(g1, `<a href="${href}" class="tweet-link" target="_blank">${g1}</a>`);
   });
 }
 
@@ -305,8 +317,8 @@ function replaceUserMentions(text, userMentions, isQuotedTweet) {
 
 function replaceHashtags(text, hashtags, isQuotedTweet) {
   hashtags.forEach(({ text: hashtag }) => {
-    const regex = new RegExp(`#${hashtag}\\b`, "g");
-    const href = `https://twitter.com/hashtag/${hashtag}?src=hash`;
+    const regex = new RegExp(`#${hashtag}`);
+    const href = `https://twitter.com/hashtag/${hashtag}?src=hashtag_click`;
     const replacement = isQuotedTweet ? `<span>#${hashtag}</span>` : `<a href="${href}" class="tweet-link" target="_blank">#${hashtag}</a>`;
 
     text = text.replace(regex, replacement);
