@@ -3,7 +3,6 @@ import NodeCache from "node-cache";
 import Parser from "rss-parser";
 import { decode } from "html-entities";
 
-
 const router = express.Router();
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const parser = new Parser({

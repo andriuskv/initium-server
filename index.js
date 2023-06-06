@@ -4,6 +4,7 @@ import cors from "cors";
 import { router as feedRouter } from "./routes/feed.js";
 import { router as twitterRouter } from "./routes/twitter.js";
 import { router as owmRouter } from "./routes/owm.js";
+import { router as wallpaperRouter } from "./routes/wallpaper.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/v1/feed", feedRouter);
 app.use("/api/v1/twitter", twitterRouter);
 app.use("/api/v1/owm", owmRouter);
+app.use("/api/v1/wallpaper", wallpaperRouter);
 
 app.listen(process.env.PORT || 8080, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
