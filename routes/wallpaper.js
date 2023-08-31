@@ -6,10 +6,15 @@ router.get("/", async (req, res) => {
   const provider = req.query.p ?? "unsplash";
 
   try {
+    res.set("Access-Control-Allow-Origin", req.headers.origin);
+    res.set("Vary", "Origin");
+
     if (provider === "bing") {
+      res.set("Cache-Control", "public, max-age=300");
       res.send(await fetchBingInfo());
     }
     else {
+      res.set("Cache-Control", "private, max-age=300");
       res.send(await fetchUnsplashInfo());
     }
   } catch (e) {
