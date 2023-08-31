@@ -8,8 +8,9 @@ import { router as wallpaperRouter } from "./routes/wallpaper.js";
 
 const app = express();
 
+app.disable("x-powered-by");
 app.use(cors({
-  origin: process.env.URL,
+  origin: process.env.URL.split(","),
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "x-authorization"]
 }));
