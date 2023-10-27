@@ -5,8 +5,8 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   if (req.query.q || (req.query.lat && req.query.lon)) {
     try {
-      const { type, units } = req.query;
-      const data = await fetchWeather(req.query);
+      const params = parseQueryParams(req.query);
+      const data = await fetchWeather(params);
 
       if (data.cod === "404") {
         return res.send({ status: 404, type: "target", message: "Location not found." });
@@ -16,11 +16,11 @@ router.get("/", async (req, res) => {
       }
       res.set("Cache-Control", "public, max-age=300");
 
-      if (type === "more") {
-        res.send(parseMoreWeather(data, units));
+      if (req.query.type === "more") {
+        res.send(parseMoreWeather(data, params));
       }
       else {
-        res.send(parseWeather(data, units));
+        res.send(parseWeather(data, params));
       }
     } catch (e) {
       res.status(500).json(e);
@@ -41,33 +41,29 @@ function getUrl(params) {
 
   if (params.type === "more") {
     url = new URL("https://api.openweathermap.org/data/2.5/onecall");
-    delete params.type;
+    url.searchParams.set("lat", params.lat);
+    url.searchParams.set("lon", params.lon);
     url.searchParams.set("exclude", "current,minutely,alerts");
-  }
-  else if (params.type === "hourly") {
-    url = new URL("https://api.openweathermap.org/data/2.5/onecall");
-    delete params.type;
-    url.searchParams.set("exclude", "current,minutely,daily");
   }
   else {
     url = new URL("https://api.openweathermap.org/data/2.5/weather");
+    url.searchParams.set("q", params.q);
   }
 
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
+  url.searchParams.set("lang", params.lang.locale);
   url.searchParams.set("units", "metric");
   url.searchParams.set("appid", process.env.OWM_API_KEY);
+
   return url;
 }
 
-function parseWeather(data, units) {
-  const [tempUnits, speedUnits = "m/s"] = units.split(",");
+function parseWeather(data, { units }) {
+  const { tempUnits, speedUnits } = units;
   const [weather] = data.weather;
 
   return {
     city: data.name,
-    temperature: tempUnits === "C" ?
+    temperature: tempUnits === "c" ?
       Math.round(data.main.temp) :
       convertTemperature(data.main.temp, tempUnits),
     humidity: data.main.humidity,
@@ -83,8 +79,8 @@ function parseWeather(data, units) {
   };
 }
 
-function parseMoreWeather(data, units) {
-  const [tempUnits, speedUnits = "m/s"] = units.split(",");
+function parseMoreWeather(data, { lang, units }) {
+  const { tempUnits, speedUnits } = units;
   const currentDateInSeconds = Date.now() / 1000;
   const hourly = data.hourly
     .filter(item => item.dt + data.timezone_offset > currentDateInSeconds - 3600)
@@ -92,7 +88,7 @@ function parseMoreWeather(data, units) {
     .map(item => {
       return {
         hour: new Date((item.dt + data.timezone_offset) * 1000).getUTCHours(),
-        temperature: tempUnits === "C" ?
+        temperature: tempUnits === "c" ?
           Math.round(item.temp) :
           convertTemperature(item.temp, tempUnits),
         precipitation: Math.round(item.pop * 100),
@@ -104,22 +100,20 @@ function parseMoreWeather(data, units) {
         }
       };
     });
+  const formatter = new Intl.DateTimeFormat(lang.dateLocale, { weekday: "short" });
   const daily = data.daily.map(item => {
     const [weather] = item.weather;
-    const weekday = new Intl.DateTimeFormat(["en"], {
-      weekday: "short"
-    }).format(item.dt * 1000);
 
     return {
       temperature: {
-        min: tempUnits === "C" ?
+        min: tempUnits === "c" ?
           Math.round(item.temp.min) :
           convertTemperature(item.temp.min, tempUnits),
-        max: tempUnits === "C" ?
+        max: tempUnits === "c" ?
           Math.round(item.temp.max) :
           convertTemperature(item.temp.max, tempUnits)
       },
-      weekday,
+      weekday: formatter.format(item.dt * 1000),
       description: capitalizeString(weather.description),
       icon: getIconUrl(weather.icon)
     };
@@ -128,8 +122,25 @@ function parseMoreWeather(data, units) {
   return { hourly, daily };
 }
 
+function parseQueryParams(params) {
+  const [tempUnits = "c", speedUnits = "m/s"] = params.units ? params.units.split(",") : ["c", "m/s"];
+  const [locale = "en", dateLocale = "en"] = params.lang ? params.lang.split(",") : ["en", "en"];
+
+  return {
+    ...params,
+    units: {
+      tempUnits: tempUnits.toLowerCase(),
+      speedUnits: speedUnits.toLowerCase()
+    },
+    lang: {
+      locale: locale.toLowerCase(),
+      dateLocale: dateLocale.toLowerCase()
+    }
+  };
+}
+
 function convertTemperature(value, units) {
-  if (units === "F") {
+  if (units === "f") {
     value = value * 1.8 + 32;
   }
   else {
