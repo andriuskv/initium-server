@@ -75,6 +75,7 @@ function parseWeather(data, { units }) {
         convertWindSpeed(data.wind.speed, speedUnits),
       direction: getWindDirection(data.wind.deg)
     },
+    iconId: weather.icon,
     icon: getIconUrl(weather.icon)
   };
 }
@@ -115,6 +116,7 @@ function parseMoreWeather(data, { lang, units }) {
       },
       weekday: formatter.format(item.dt * 1000),
       description: capitalizeString(weather.description),
+      iconId: weather.icon,
       icon: getIconUrl(weather.icon)
     };
   });
