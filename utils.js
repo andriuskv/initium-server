@@ -1,5 +1,9 @@
-function padTime(time, pad = true) {
-  return pad ? `00${time}`.slice(-2) : time;
+function round(number, decimals) {
+  return Math.round((number + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
+}
+
+function pad(value, shouldPad = true) {
+  return shouldPad ? `${value}`.padStart(2, "0") : value;
 }
 
 function formatTime(time) {
@@ -7,7 +11,7 @@ function formatTime(time) {
   const minutes = Math.floor(time / 60 % 60);
   const seconds = time % 60;
 
-  return `${hours ? `${hours}:` : ""}${padTime(minutes, hours)}:${padTime(seconds)}`;
+  return `${hours ? `${hours}:` : ""}${pad(minutes, hours)}:${pad(seconds)}`;
 }
 
 function getMonth(month, useShortName = false) {
@@ -30,6 +34,8 @@ function getMonth(month, useShortName = false) {
 }
 
 export {
+  round,
+  pad,
   formatTime,
   getMonth
 };

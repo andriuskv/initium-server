@@ -1,4 +1,5 @@
 import express from "express";
+import { pad, round } from "../utils.js";
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get("/", async (req, res) => {
       else if (data.code === 404) {
         return res.send({ status: 404, type: "target", message: "Location not found." });
       }
-      res.set("Cache-Control", "public, max-age=600");
+      res.set("Cache-Control", "public, max-age=1200");
 
       if (req.query.type === "more") {
         res.send(parseMoreWeather(data, params));
@@ -65,8 +66,6 @@ async function fetchCoords({ q, lat, lon }) {
   url.searchParams.set("appid", process.env.OWM_API_KEY);
 
   const json = await fetch(url).then(res => res.json());
-
-  console.log(json);
 
   if (Array.isArray(json) && json.length) {
     return {
@@ -293,14 +292,6 @@ function getDateRange() {
       string: `${end.year}-${pad(end.month + 1)}-${pad(end.day)}`
     }
   };
-}
-
-function round(number, decimals) {
-  return Math.round((number + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
-}
-
-function pad(value) {
-  return value.toString().padStart(2, "0");
 }
 
 export {
