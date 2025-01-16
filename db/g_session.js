@@ -1,7 +1,7 @@
-import { db } from "./index.js";
+import { getDb } from "./index.js";
 import { createHash } from "node:crypto";
 
-function getRow(hash) {
+function getRow(hash, db) {
   return db.oneOrNone("SELECT * FROM g_session WHERE hash = $1", hash);
 }
 
@@ -10,8 +10,9 @@ function getHash(string) {
 }
 
 async function setItem(item) {
+  const db = await getDb();
   const hash = getHash(item.email);
-  const row = await getRow(hash);
+  const row = await getRow(hash, db);
 
   if (row) {
     return db.none("UPDATE g_session SET token = $2, accessed = $3 WHERE hash = $1", [hash, item.token, Date.now()]);
@@ -20,8 +21,9 @@ async function setItem(item) {
 }
 
 async function getItem(email) {
+  const db = await getDb();
   const hash = getHash(email);
-  const row = await getRow(hash);
+  const row = await getRow(hash, db);
 
   if (!row) {
     return;
@@ -33,20 +35,24 @@ async function getItem(email) {
     remoevItem(row.id);
     return { message: "Session expired. Log in again." };
   }
-  updateAccessDate(row);
+  updateAccessDate(row, db);
   return row;
 }
 
-function remoevItem(id) {
+async function remoevItem(id) {
+  const db = await getDb();
+
   db.none("DELETE FROM g_session WHERE id = $1", id);
 }
 
-function removeItemWithEmail(email) {
+async function removeItemWithEmail(email) {
+  const db = await getDb();
+
   const hash = getHash(email);
   db.none("DELETE FROM g_session WHERE hash = $1", hash);
 }
 
-function updateAccessDate(item) {
+function updateAccessDate(item, db) {
   db.none("UPDATE g_session SET accessed = $2 WHERE hash = $1", [item.hash, Date.now()]);
 }
 
