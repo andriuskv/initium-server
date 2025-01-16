@@ -105,7 +105,7 @@ router.get("/refresh", async (req, res) => {
   const item = await getItem(req.query.email);
 
   if (!item || !item.token) {
-    res.status(401).json({ error: "User not found." });
+    res.status(401).json({ error: "User session not found. Try again." });
     return;
   }
 
