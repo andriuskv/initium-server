@@ -3,3 +3,4 @@ config
 .dockerignore
 Dockerfile
 fly.toml
+message.js

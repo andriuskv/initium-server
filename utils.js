@@ -33,9 +33,14 @@ function getMonth(month, useShortName = false) {
   return useShortName ? months[month].slice(0, 3) : months[month];
 }
 
+function getRandomString(length = 8) {
+  return Math.random().toString(32).slice(2, 2 + length);
+}
+
 export {
   round,
   pad,
   formatTime,
-  getMonth
+  getMonth,
+  getRandomString
 };

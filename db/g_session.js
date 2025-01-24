@@ -1,6 +1,18 @@
 import { getDb } from "./index.js";
 import { createHash } from "node:crypto";
 
+async function initSession(db) {
+  await db.none(`
+    CREATE TABLE IF NOT EXISTS g_session(
+      id serial PRIMARY KEY,
+      hash VARCHAR UNIQUE NOT NULL,
+      token VARCHAR NOT NULL,
+      accessed VARCHAR NOT NULL
+    );
+  `);
+  await removeExpiredItems(db);
+}
+
 function getRow(hash, db) {
   return db.oneOrNone("SELECT * FROM g_session WHERE hash = $1", hash);
 }
@@ -56,7 +68,15 @@ function updateAccessDate(item, db) {
   db.none("UPDATE g_session SET accessed = $2 WHERE hash = $1", [item.hash, Date.now()]);
 }
 
+function removeExpiredItems(db) {
+  const now = Date.now();
+  const gap = 5 * 30 * 24 * 60 * 60 * 1000;
+
+  return db.none("DELETE FROM g_session WHERE cast(accessed as BIGINT) < $1", now - gap);
+}
+
 export {
+  initSession,
   setItem,
   getItem,
   remoevItem,
